@@ -18,7 +18,6 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Config/llvm-config.h" // for LLVM_ON_UNIX
 #include "llvm/Support/Compiler.h"
-#include <ciso646> // So we can check the C++ standard lib macros.
 #include <optional>
 
 #if defined(_MSC_VER)
@@ -139,8 +138,8 @@ constexpr bool llvm_is_multithreaded() { return LLVM_ENABLE_THREADS; }
     /// compute_thread_count()).
     void apply_thread_strategy(unsigned ThreadPoolNum) const;
 
-    /// Finds the CPU socket where a thread should go. Returns 'None' if the
-    /// thread shall remain on the actual CPU socket.
+    /// Finds the CPU socket where a thread should go. Returns 'std::nullopt' if
+    /// the thread shall remain on the actual CPU socket.
     std::optional<unsigned> compute_cpu_socket(unsigned ThreadPoolNum) const;
   };
 
@@ -186,6 +185,18 @@ constexpr bool llvm_is_multithreaded() { return LLVM_ENABLE_THREADS; }
     ThreadPoolStrategy S;
     S.ThreadsRequested = ThreadCount;
     return S;
+  }
+
+  /// Like hardware_concurrency() above, but builds a strategy
+  /// based on the rules described for get_threadpool_strategy().
+  /// If \p Num is invalid, returns a default strategy where one thread per
+  /// hardware core is used.
+  inline ThreadPoolStrategy hardware_concurrency(StringRef Num) {
+    std::optional<ThreadPoolStrategy> S =
+        get_threadpool_strategy(Num, hardware_concurrency());
+    if (S)
+      return *S;
+    return hardware_concurrency();
   }
 
   /// Returns an optimal thread strategy to execute specified amount of tasks.

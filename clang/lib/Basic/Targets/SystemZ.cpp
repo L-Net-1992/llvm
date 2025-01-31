@@ -20,11 +20,11 @@
 using namespace clang;
 using namespace clang::targets;
 
-const Builtin::Info SystemZTargetInfo::BuiltinInfo[] = {
+static constexpr Builtin::Info BuiltinInfo[] = {
 #define BUILTIN(ID, TYPE, ATTRS)                                               \
-  {#ID, TYPE, ATTRS, nullptr, ALL_LANGUAGES, nullptr},
+  {#ID, TYPE, ATTRS, nullptr, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
 #define TARGET_BUILTIN(ID, TYPE, ATTRS, FEATURE)                               \
-  {#ID, TYPE, ATTRS, nullptr, ALL_LANGUAGES, FEATURE},
+  {#ID, TYPE, ATTRS, FEATURE, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
 #include "clang/Basic/BuiltinsSystemZ.def"
 };
 
@@ -46,11 +46,11 @@ const TargetInfo::AddlRegName GCCAddlRegNames[] = {
 };
 
 ArrayRef<const char *> SystemZTargetInfo::getGCCRegNames() const {
-  return llvm::makeArrayRef(GCCRegNames);
+  return llvm::ArrayRef(GCCRegNames);
 }
 
 ArrayRef<TargetInfo::AddlRegName> SystemZTargetInfo::getGCCAddlRegNames() const {
-  return llvm::makeArrayRef(GCCAddlRegNames);
+  return llvm::ArrayRef(GCCAddlRegNames);
 }
 
 bool SystemZTargetInfo::validateAsmConstraint(
@@ -105,6 +105,7 @@ static constexpr ISANameRevision ISARevisions[] = {
   {{"arch12"}, 12}, {{"z14"}, 12},
   {{"arch13"}, 13}, {{"z15"}, 13},
   {{"arch14"}, 14}, {{"z16"}, 14},
+  {{"arch15"}, 15},
 };
 
 int SystemZTargetInfo::getISARevision(StringRef Name) const {
@@ -133,9 +134,20 @@ bool SystemZTargetInfo::hasFeature(StringRef Feature) const {
       .Case("arch12", ISARevision >= 12)
       .Case("arch13", ISARevision >= 13)
       .Case("arch14", ISARevision >= 14)
+      .Case("arch15", ISARevision >= 15)
       .Case("htm", HasTransactionalExecution)
       .Case("vx", HasVector)
       .Default(false);
+}
+
+unsigned SystemZTargetInfo::getMinGlobalAlign(uint64_t Size,
+                                              bool HasNonWeakDef) const {
+  // Don't enforce the minimum alignment on an external or weak symbol if
+  // -munaligned-symbols is passed.
+  if (UnalignedSymbols && !HasNonWeakDef)
+    return 0;
+
+  return MinGlobalAlign;
 }
 
 void SystemZTargetInfo::getTargetDefines(const LangOptions &Opts,
@@ -157,10 +169,10 @@ void SystemZTargetInfo::getTargetDefines(const LangOptions &Opts,
   if (HasVector)
     Builder.defineMacro("__VX__");
   if (Opts.ZVector)
-    Builder.defineMacro("__VEC__", "10304");
+    Builder.defineMacro("__VEC__", "10305");
 }
 
 ArrayRef<Builtin::Info> SystemZTargetInfo::getTargetBuiltins() const {
-  return llvm::makeArrayRef(BuiltinInfo, clang::SystemZ::LastTSBuiltin -
-                                             Builtin::FirstTSBuiltin);
+  return llvm::ArrayRef(BuiltinInfo, clang::SystemZ::LastTSBuiltin -
+                                         Builtin::FirstTSBuiltin);
 }

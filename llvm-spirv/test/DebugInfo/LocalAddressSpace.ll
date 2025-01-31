@@ -7,7 +7,7 @@
 ; RUN: llvm-as < %s -o %t.bc
 ; RUN: llvm-spirv %t.bc -o %t.spv
 ; RUN: llvm-spirv %t.bc -o - -spirv-text | FileCheck %s --check-prefix=CHECK-SPIRV
-; RUN: llvm-spirv -r -emit-opaque-pointers %t.spv -o - | llvm-dis -o %t.ll
+; RUN: llvm-spirv -r %t.spv -o - | llvm-dis -o %t.ll
 ; RUN: cat %t.ll | FileCheck %s --check-prefix=CHECK-LLVM
 
 ; RUN: llc -mtriple=%triple -filetype=obj -O0 < %t.ll | llvm-dwarfdump -v -debug-info - | FileCheck %s
@@ -15,7 +15,7 @@
 ; CHECK-SPIRV: Variable {{[0-9]+}} [[foo_a:[0-9]+]]
 ; CHECK-SPIRV: DebugGlobalVariable {{[0-9]+}} {{[0-9]+}} {{[0-9]+}} {{[0-9]+}} {{[0-9]+}} {{[0-9]+}} {{[0-9]+}} [[foo_a]]
 
-; CHECK-LLVM: @foo.a = internal addrspace(3) global i32 undef, align 4, !dbg ![[a_dbg_expr:[0-9]+]]
+; CHECK-LLVM: @foo.a = internal addrspace(3) global i32 poison, align 4, !dbg ![[a_dbg_expr:[0-9]+]]
 ; CHECK-LLVM: ![[a_dbg_expr]] = !DIGlobalVariableExpression(var: ![[a_dbg_var:[0-9]+]],
 ; CHECK-LLVM: ![[a_dbg_var]] = distinct !DIGlobalVariable(name: "a"
 

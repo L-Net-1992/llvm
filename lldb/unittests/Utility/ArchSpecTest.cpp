@@ -123,6 +123,18 @@ TEST(ArchSpecTest, TestSetTriple) {
   EXPECT_STREQ("i686", AS.GetArchitectureName());
   EXPECT_EQ(ArchSpec::eCore_x86_32_i686, AS.GetCore());
 
+  AS = ArchSpec();
+  EXPECT_TRUE(AS.SetTriple("msp430---elf"));
+  EXPECT_EQ(llvm::Triple::msp430, AS.GetTriple().getArch());
+  EXPECT_STREQ("msp430", AS.GetArchitectureName());
+  EXPECT_EQ(ArchSpec::eCore_msp430, AS.GetCore());
+
+  AS = ArchSpec();
+  EXPECT_TRUE(AS.SetTriple("amd64-unknown-openbsd"));
+  EXPECT_EQ(llvm::Triple::x86_64, AS.GetTriple().getArch());
+  EXPECT_STREQ("amd64", AS.GetArchitectureName());
+  EXPECT_EQ(ArchSpec::eCore_x86_64_amd64, AS.GetCore());
+
   // Various flavors of invalid triples.
   AS = ArchSpec();
   EXPECT_FALSE(AS.SetTriple("unknown-unknown-unknown"));

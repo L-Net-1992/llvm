@@ -46,8 +46,9 @@ public:
                                          values.end().getCurrent()))) {}
   template <typename Arg, typename = std::enable_if_t<std::is_constructible<
                               ArrayRef<Type>, Arg>::value>>
-  TypeRange(Arg &&arg) : TypeRange(ArrayRef<Type>(std::forward<Arg>(arg))) {}
-  TypeRange(std::initializer_list<Type> types)
+  TypeRange(Arg &&arg LLVM_LIFETIME_BOUND)
+      : TypeRange(ArrayRef<Type>(std::forward<Arg>(arg))) {}
+  TypeRange(std::initializer_list<Type> types LLVM_LIFETIME_BOUND)
       : TypeRange(ArrayRef<Type>(types)) {}
 
 private:
@@ -166,13 +167,13 @@ inline bool operator==(ArrayRef<Type> lhs, const ValueTypeRange<RangeT> &rhs) {
 }
 
 //===----------------------------------------------------------------------===//
-// SubElementInterfaces
+// SubElements
 //===----------------------------------------------------------------------===//
 
 /// Enable TypeRange to be introspected for sub-elements.
 template <>
 struct AttrTypeSubElementHandler<TypeRange> {
-  static void walk(TypeRange param, AttrTypeSubElementWalker &walker) {
+  static void walk(TypeRange param, AttrTypeImmediateSubElementWalker &walker) {
     walker.walkRange(param);
   }
   static TypeRange replace(TypeRange param,
@@ -217,13 +218,15 @@ private:
   }
 
   static bool isEmptyKey(mlir::TypeRange range) {
-    if (const auto *type = range.getBase().dyn_cast<const mlir::Type *>())
+    if (const auto *type =
+            llvm::dyn_cast_if_present<const mlir::Type *>(range.getBase()))
       return type == getEmptyKeyPointer();
     return false;
   }
 
   static bool isTombstoneKey(mlir::TypeRange range) {
-    if (const auto *type = range.getBase().dyn_cast<const mlir::Type *>())
+    if (const auto *type =
+            llvm::dyn_cast_if_present<const mlir::Type *>(range.getBase()))
       return type == getTombstoneKeyPointer();
     return false;
   }

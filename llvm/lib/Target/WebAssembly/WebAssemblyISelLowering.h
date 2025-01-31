@@ -24,16 +24,8 @@ namespace WebAssemblyISD {
 enum NodeType : unsigned {
   FIRST_NUMBER = ISD::BUILTIN_OP_END,
 #define HANDLE_NODETYPE(NODE) NODE,
-#define HANDLE_MEM_NODETYPE(NODE)
-#include "WebAssemblyISD.def"
-  FIRST_MEM_OPCODE = ISD::FIRST_TARGET_MEMORY_OPCODE,
-#undef HANDLE_NODETYPE
-#undef HANDLE_MEM_NODETYPE
-#define HANDLE_NODETYPE(NODE)
-#define HANDLE_MEM_NODETYPE(NODE) NODE,
 #include "WebAssemblyISD.def"
 #undef HANDLE_NODETYPE
-#undef HANDLE_MEM_NODETYPE
 };
 
 } // end namespace WebAssemblyISD
@@ -95,7 +87,8 @@ private:
   bool CanLowerReturn(CallingConv::ID CallConv, MachineFunction &MF,
                       bool isVarArg,
                       const SmallVectorImpl<ISD::OutputArg> &Outs,
-                      LLVMContext &Context) const override;
+                      LLVMContext &Context,
+                      const Type *RetTy) const override;
   SDValue LowerReturn(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
                       const SmallVectorImpl<ISD::OutputArg> &Outs,
                       const SmallVectorImpl<SDValue> &OutVals, const SDLoc &dl,
@@ -108,10 +101,6 @@ private:
 
   void ReplaceNodeResults(SDNode *N, SmallVectorImpl<SDValue> &Results,
                           SelectionDAG &DAG) const override;
-
-  const char *getClearCacheBuiltinName() const override {
-    report_fatal_error("llvm.clear_cache is not supported on wasm");
-  }
 
   bool
   shouldSimplifyDemandedVectorElts(SDValue Op,
@@ -131,6 +120,7 @@ private:
   SDValue LowerCopyToReg(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerIntrinsic(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerSIGN_EXTEND_INREG(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerEXTEND_VECTOR_INREG(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerBUILD_VECTOR(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerVECTOR_SHUFFLE(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerSETCC(SDValue Op, SelectionDAG &DAG) const;
@@ -139,11 +129,8 @@ private:
   SDValue LowerFP_TO_INT_SAT(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerLoad(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerStore(SDValue Op, SelectionDAG &DAG) const;
-
-  // Helper for LoadLoad and LowerStore
-  bool MatchTableForLowering(SelectionDAG &DAG, const SDLoc &DL,
-                             const SDValue &Base, GlobalAddressSDNode *&GA,
-                             SDValue &Idx) const;
+  SDValue LowerMUL_LOHI(SDValue Op, SelectionDAG &DAG) const;
+  SDValue Replace128Op(SDNode *N, SelectionDAG &DAG) const;
 
   // Custom DAG combine hooks
   SDValue
